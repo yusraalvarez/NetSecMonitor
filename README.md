@@ -4,7 +4,7 @@ Network security monitoring tool for real-time threat detection and traffic anal
 
 ## Overview
 
-NetSecMonitor captures and analyzes network traffic to identify security threats, detect anomalies, and monitor system activity. Built with Python and Flask, it provides automated scanning, statistical threat detection, and a web-based dashboard for visualization.
+NetSecMonitor captures and analyzes network traffic to identify security threats, detect anomalies, and monitor system activity. Built with Python and Flask, it provides automated scanning, statistical threat detection, and a web based dashboard for visualization.
 
 ## Features
 
@@ -88,7 +88,3 @@ Optimized schema for time-series security data:
 - Baseline profiles for anomaly detection
 
 Indexes on timestamp, IP addresses, and protocols for efficient querying.
-
-## License
-
-MIT License
