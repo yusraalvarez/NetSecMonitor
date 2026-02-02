@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NetSecMonitor Dashboard</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        header {
+            background: white;
+            border-radius: 10px;
+            padding: 20px 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            color: #667eea;
+            font-size: 2em;
+            margin-bottom: 5px;
+        }
+
+        .subtitle {
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 10px;
+            padding: 25px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: transform 0.2s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .stat-label {
+            color: #666;
+            font-size: 0.9em;
+            margin-bottom: 10px;
+        }
+
+        .stat-value {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .chart-container {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .chart-title {
+            font-size: 1.3em;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 15px;
+        }
+
+        .alerts-container {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .alert-item {
+            padding: 15px;
+            border-left: 4px solid;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            background: #f8f9fa;
+        }
+
+        .alert-item.critical {
+            border-left-color: #dc3545;
+            background: #fff5f5;
+        }
+
+        .alert-item.high {
+            border-left-color: #fd7e14;
+            background: #fff8f0;
+        }
+
+        .alert-item.medium {
+            border-left-color: #ffc107;
+            background: #fffbf0;
+        }
+
+        .alert-item.low {
+            border-left-color: #28a745;
+            background: #f0fff4;
+        }
+
+        .alert-header {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .alert-details {
+            font-size: 0.9em;
+            color: #666;
+        }
+
+        .alert-time {
+            font-size: 0.8em;
+            color: #999;
+            margin-top: 5px;
+        }
+
+        .refresh-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+            margin-left: 10px;
+        }
+
+        .refresh-btn:hover {
+            background: #5568d3;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #28a745;
+            animation: pulse 2s infinite;
+            margin-right: 8px;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .grid-2 {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🔒 NetSecMonitor Dashboard</h1>
+            <p class="subtitle">
+                <span class="status-indicator"></span>
+                Real-time Network Security Monitoring
+                <button class="refresh-btn" onclick="refreshAll()">🔄 Refresh Data</button>
+            </p>
+        </header>
+
+        <!-- Statistics Cards -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-label">Total Packets Captured</div>
+                <div class="stat-value" id="total-packets">-</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Packets (Last Hour)</div>
+                <div class="stat-value" id="packets-hour">-</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Open Alerts</div>
+                <div class="stat-value" id="open-alerts" style="color: #dc3545;">-</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Unique IPs (24h)</div>
+                <div class="stat-value" id="unique-ips">-</div>
+            </div>
+        </div>
+
+        <!-- Charts -->
+        <div class="grid-2">
+            <div class="chart-container">
+                <div class="chart-title">📈 Traffic Volume Timeline</div>
+                <div id="traffic-timeline"></div>
+            </div>
+            <div class="chart-container">
+                <div class="chart-title">🔍 Protocol Distribution</div>
+                <div id="protocol-chart"></div>
+            </div>
+        </div>
+
+        <div class="grid-2">
+            <div class="chart-container">
+                <div class="chart-title">💻 Top Talkers (Last Hour)</div>
+                <div id="top-talkers"></div>
+            </div>
+            <div class="alerts-container">
+                <div class="chart-title">🚨 Recent Security Alerts</div>
+                <div id="alerts-list"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Fetch and update statistics
+        async function updateStats() {
+            const response = await fetch('/api/stats/overview');
+            const data = await response.json();
+            
+            document.getElementById('total-packets').textContent = data.total_packets.toLocaleString();
+            document.getElementById('packets-hour').textContent = data.packets_last_hour.toLocaleString();
+            document.getElementById('open-alerts').textContent = data.open_alerts;
+            document.getElementById('unique-ips').textContent = data.unique_ips;
+        }
+
+        // Update traffic timeline chart
+        async function updateTrafficTimeline() {
+            const response = await fetch('/api/traffic/timeline?hours=6');
+            const data = await response.json();
+            
+            const trace = {
+                x: data.map(d => d.time),
+                y: data.map(d => d.packets),
+                type: 'scatter',
+                mode: 'lines+markers',
+                name: 'Packets',
+                line: { color: '#667eea', width: 2 }
+            };
+            
+            const layout = {
+                margin: { t: 10, r: 10, b: 40, l: 50 },
+                xaxis: { title: 'Time' },
+                yaxis: { title: 'Packets' },
+                height: 300
+            };
+            
+            Plotly.newPlot('traffic-timeline', [trace], layout, {responsive: true});
+        }
+
+        // Update protocol distribution chart
+        async function updateProtocols() {
+            const response = await fetch('/api/protocols/distribution?hours=6');
+            const data = await response.json();
+            
+            const trace = {
+                labels: data.map(d => d.protocol),
+                values: data.map(d => d.count),
+                type: 'pie',
+                marker: {
+                    colors: ['#667eea', '#764ba2', '#f093fb', '#4facfe', '#00f2fe']
+                }
+            };
+            
+            const layout = {
+                margin: { t: 10, r: 10, b: 10, l: 10 },
+                height: 300,
+                showlegend: true
+            };
+            
+            Plotly.newPlot('protocol-chart', [trace], layout, {responsive: true});
+        }
+
+        // Update top talkers
+        async function updateTopTalkers() {
+            const response = await fetch('/api/top-talkers?limit=10');
+            const data = await response.json();
+            
+            const trace = {
+                x: data.map(d => d.packets),
+                y: data.map(d => d.ip),
+                type: 'bar',
+                orientation: 'h',
+                marker: { color: '#667eea' }
+            };
+            
+            const layout = {
+                margin: { t: 10, r: 10, b: 40, l: 120 },
+                xaxis: { title: 'Packet Count' },
+                height: 300
+            };
+            
+            Plotly.newPlot('top-talkers', [trace], layout, {responsive: true});
+        }
+
+        // Update alerts list
+        async function updateAlerts() {
+            const response = await fetch('/api/alerts/recent?limit=10');
+            const data = await response.json();
+            
+            const alertsHtml = data.map(alert => `
+                <div class="alert-item ${alert.severity}">
+                    <div class="alert-header">
+                        [${alert.severity.toUpperCase()}] ${alert.description}
+                    </div>
+                    <div class="alert-details">
+                        Type: ${alert.type} | Source: ${alert.source_ip || 'N/A'}
+                        <br>${alert.details}
+                    </div>
+                    <div class="alert-time">${new Date(alert.timestamp).toLocaleString()}</div>
+                </div>
+            `).join('');
+            
+            document.getElementById('alerts-list').innerHTML = alertsHtml || '<p>No recent alerts</p>';
+        }
+
+        // Refresh all data
+        function refreshAll() {
+            updateStats();
+            updateTrafficTimeline();
+            updateProtocols();
+            updateTopTalkers();
+            updateAlerts();
+        }
+
+        // Initial load
+        refreshAll();
+
+        // Auto-refresh every 30 seconds
+        setInterval(refreshAll, 30000);
+    </script>
+</body>
+</html>
